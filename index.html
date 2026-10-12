@@ -16,12 +16,12 @@
 <div id="canvas-container">
     <div id="picker-ui">
         <h3>Marvel vs. Capcom 2 Web Terminal</h3>
-        <p>Select your legally owned Dreamcast files to start:</p>
+        <p>Select your Dreamcast files to start:</p>
         <div>
             <label>1. System BIOS (dc_boot.bin):</label><br>
-            <input type="file" id="bios-input" accept=".bin"><br><br>
+            <input type="file" id="bios-input"><br><br>
             <label>2. Game ROM (mvc2.cdi or .chd):</label><br>
-            <input type="file" id="game-input" accept=".cdi,.chd">
+            <input type="file" id="game-input">
         </div>
         <button id="start-btn">Launch Widescreen Emulator</button>
     </div>
@@ -34,26 +34,42 @@
 
     document.getElementById('start-btn').onclick = function() {
         if (!biosFile || !gameFile) {
-            alert('Please select BOTH the dc_boot.bin file and your mvc2 game file first!');
+            alert('Please select BOTH the 2MB BIOS file and your mvc2 game file first!');
             return;
         }
         
-        // Hide file picker interface and display the widescreen canvas grid
         document.getElementById('picker-ui').style.display = 'none';
         document.getElementById('canvas').style.display = 'block';
 
-        // Bind the selected files directly into Virtual Filesystem variables
-        Module['arguments'] = ['-bios', biosFile.name, '-game', gameFile.name];
-        
-        var loadScript = document.createElement('script');
-        loadScript.src = 'build/prod/flycast.js';
-        document.head.appendChild(loadScript);
+        // FIX: Creating a virtual filesystem memory layer inside the browser tab
+        Module['FS_createDataFile']('/', 'dc_boot.bin', new Uint8Array([]), true, true);
+        Module['FS_createDataFile']('/', 'game.cdi', new Uint8Array([]), true, true);
+
+        var reader1 = new FileReader();
+        reader1.onload = function() {
+            Module['FS'].writeFile('/dc_boot.bin', new Uint8Array(reader1.result));
+            
+            var reader2 = new FileReader();
+            reader2.onload = function() {
+                Module['FS'].writeFile('/game.cdi', new Uint8Array(reader2.result));
+                
+                // Forces arguments to bind to our newly made virtual memory files
+                Module['arguments'] = ['-bios', '/dc_boot.bin', '-game', '/game.cdi'];
+                
+                var loadScript = document.createElement('script');
+                loadScript.src = 'build/prod/flycast.js';
+                document.head.appendChild(loadScript);
+            };
+            reader2.readAsArrayBuffer(gameFile);
+        };
+        reader1.readAsArrayBuffer(biosFile);
     };
 
     var Module = {
         canvas: document.getElementById('canvas'),
         print: function(text) { console.log(text); },
-        printErr: function(text) { console.error(text); }
+        printErr: function(text) { console.error(text); },
+        preRun: [function() { Module['FS'] = FS; }]
     };
 </script>
 </body>
