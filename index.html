@@ -43,14 +43,14 @@
 
         var reader1 = new FileReader();
         reader1.onload = function() {
-            // FIX: Uses the exact, real name of your uploaded files dynamically
+            // Dynamically writes the file into memory using whatever it's named on your laptop
             Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
             
             var reader2 = new FileReader();
             reader2.onload = function() {
                 Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
                 
-                // Matches the exact real name strings for launch arguments
+                // Feeds the exact matching text strings directly into the emulator argument array
                 Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
                 
                 var loadScript = document.createElement('script');
