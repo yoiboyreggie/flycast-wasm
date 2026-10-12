@@ -7,7 +7,7 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
         #canvas-container { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
-        /* Forces the web assembly emulator canvas into a 16:9 widescreen layout */
+        /* Locks the WebAssembly emulator frame into a 16:9 widescreen layout aspect ratio */
         canvas { width: 100vw !important; height: 56.25vw !important; max-height: 100vh !important; max-width: 177.78vh !important; background-color: #111; }
     </style>
 </head>
@@ -20,7 +20,7 @@
 <script>
     var Module = {
         canvas: document.getElementById('canvas'),
-        // PASTE YOUR DIRECT SPREADSHEET DOWNLOAD LINKS FOR MVC2 AND BIOS BETWEEN THESE SINGLE QUOTES
+        // REPLACE THESE: Substitute the placeholder strings with your active streaming download links
         arguments: [
             '-bios', 'YOUR_DIRECT_DOWNLOAD_BIOS_URL_HERE', 
             '-game', 'YOUR_DIRECT_DOWNLOAD_ROM_URL_HERE'
@@ -30,8 +30,8 @@
     };
 </script>
 
-<!-- Links your webpage straight into the precompiled engine folders inside your fork -->
-<script src="build/flycast.js"></script>
+<!-- FIX: Corrected path pointing straight to the compiled engine directory -->
+<script src="build/prod/flycast.js"></script>
 
 </body>
 </html>
