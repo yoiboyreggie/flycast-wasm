@@ -41,20 +41,17 @@
         document.getElementById('picker-ui').style.display = 'none';
         document.getElementById('canvas').style.display = 'block';
 
-        // FIX: Creating a virtual filesystem memory layer inside the browser tab
-        Module['FS_createDataFile']('/', 'dc_boot.bin', new Uint8Array([]), true, true);
-        Module['FS_createDataFile']('/', 'game.cdi', new Uint8Array([]), true, true);
-
         var reader1 = new FileReader();
         reader1.onload = function() {
-            Module['FS'].writeFile('/dc_boot.bin', new Uint8Array(reader1.result));
+            // FIX: Uses the exact, real name of your uploaded files dynamically
+            Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
             
             var reader2 = new FileReader();
             reader2.onload = function() {
-                Module['FS'].writeFile('/game.cdi', new Uint8Array(reader2.result));
+                Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
                 
-                // Forces arguments to bind to our newly made virtual memory files
-                Module['arguments'] = ['-bios', '/dc_boot.bin', '-game', '/game.cdi'];
+                // Matches the exact real name strings for launch arguments
+                Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
                 
                 var loadScript = document.createElement('script');
                 loadScript.src = 'build/prod/flycast.js';
