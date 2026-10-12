@@ -46,7 +46,6 @@
         var reader1 = new FileReader();
         
         reader1.onload = function() {
-            // Mount the binary directly into the virtual Emscripten system
             Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
             
             status.innerText = "Reading Game ROM (700MB)... Please wait...";
@@ -59,7 +58,6 @@
                 document.getElementById('picker-ui').style.display = 'none';
                 document.getElementById('canvas').style.display = 'block';
                 
-                // Binding internal system arguments exactly to what the binary expects
                 Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
                 
                 var loadScript = document.createElement('script');
@@ -67,7 +65,7 @@
                 document.head.appendChild(loadScript);
             };
             
-            // Track giant file streaming layout process to prevent browser lockups
+            // Explicit running progress bar updater for larger file streams
             reader2.onprogress = function(data) {
                 if (data.lengthComputable) {
                     var progress = Math.round((data.loaded / data.total) * 100);
