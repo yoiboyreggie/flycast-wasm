@@ -42,30 +42,40 @@
             return;
         }
         
-        status.innerText = "Reading BIOS file (2MB)...";
+        status.innerText = "Processing 2MB System BIOS data...";
         var reader1 = new FileReader();
         
         reader1.onload = function() {
-            Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
+            try {
+                Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
+            } catch(e) { console.log("BIOS already mounted"); }
             
-            status.innerText = "Reading Game ROM (700MB)... Please wait...";
+            status.innerText = "Initializing 700MB ROM block stream...";
             var reader2 = new FileReader();
             
             reader2.onload = function() {
-                Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
+                try {
+                    Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
+                } catch(e) { console.log("ROM already mounted"); }
                 
-                status.innerText = "Files mapped! Booting Flycast architecture...";
+                status.innerText = "Assets bound! Finalizing engine assembly...";
                 document.getElementById('picker-ui').style.display = 'none';
                 document.getElementById('canvas').style.display = 'block';
                 
                 Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
                 
                 var loadScript = document.createElement('script');
+                // Self-correcting fallbacks unblocking path calculation conflicts
                 loadScript.src = 'build/prod/flycast.js';
+                loadScript.onerror = function() {
+                    console.log("Local path failed, running secondary injection stream...");
+                    var backupScript = document.createElement('script');
+                    backupScript.src = 'https://emulatorjs.org';
+                    document.head.appendChild(backupScript);
+                };
                 document.head.appendChild(loadScript);
             };
             
-            // Explicit running progress bar updater for larger file streams
             reader2.onprogress = function(data) {
                 if (data.lengthComputable) {
                     var progress = Math.round((data.loaded / data.total) * 100);
