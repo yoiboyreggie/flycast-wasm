@@ -7,56 +7,74 @@
         body, html { margin:0; padding:0; width:100%; height:100%; background:#222; overflow:hidden; font-family:sans-serif; }
         #canvas-container { display:flex; flex-direction:column; justify-content:center; align-items:center; width:100vw; height:100vh; }
         canvas { width:100vw !important; height:56.25vw !important; max-height:85vh !important; max-width:177.78vh !important; background:#111; display:none; }
-        #picker-ui { color:#fff; text-align:center; padding:20px; border:2px dashed #555; background:#1a1a1a; border-radius:8px; }
-        button { background:#007bff; color:#fff; border:none; padding:10px 20px; font-size:16px; border-radius:4px; cursor:pointer; margin-top:10px; }
+        #picker-ui { color:#fff; text-align:center; padding:30px; border:2px dashed #555; background:#1a1a1a; border-radius:8px; width:350px; }
+        button { background:#007bff; color:#fff; border:none; padding:12px 24px; font-size:16px; border-radius:4px; cursor:pointer; margin-top:15px; width:100%; font-weight:bold; }
         button:hover { background:#0056b3; }
+        input[type="file"] { margin: 10px 0 20px 0; color: #ccc; }
+        #status-msg { margin-top: 15px; color: #ffc107; font-size: 14px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
 <div id="canvas-container">
     <div id="picker-ui">
         <h3>Marvel vs. Capcom 2 Web Terminal</h3>
-        <p>Select your Dreamcast files to start:</p>
-        <div>
-            <label>1. System BIOS (dc_boot.bin):</label><br>
-            <input type="file" id="bios-input"><br><br>
-            <label>2. Game ROM (mvc2.cdi or .chd):</label><br>
+        <p style="color:#aaa; font-size:14px; margin-bottom:20px;">Mount system assets locally into workspace RAM:</p>
+        <div style="text-align:left;">
+            <label style="font-weight:bold;">1. System BIOS (dc_boot.bin):</label><br>
+            <input type="file" id="bios-input"><br>
+            <label style="font-weight:bold;">2. Game ROM (Marvel vs Capcom 2.cdi):</label><br>
             <input type="file" id="game-input">
         </div>
         <button id="start-btn">Launch Widescreen Emulator</button>
+        <div id="status-msg"></div>
     </div>
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
 </div>
 <script>
     var biosFile, gameFile;
+    var status = document.getElementById('status-msg');
     document.getElementById('bios-input').onchange = function(e) { biosFile = e.target.files[0]; };
     document.getElementById('game-input').onchange = function(e) { gameFile = e.target.files[0]; };
 
     document.getElementById('start-btn').onclick = function() {
         if (!biosFile || !gameFile) {
-            alert('Please select BOTH the 2MB BIOS file and your mvc2 game file first!');
+            status.innerText = "Error: Select BOTH files before booting!";
             return;
         }
         
-        document.getElementById('picker-ui').style.display = 'none';
-        document.getElementById('canvas').style.display = 'block';
-
+        status.innerText = "Reading BIOS file (2MB)...";
         var reader1 = new FileReader();
+        
         reader1.onload = function() {
-            // Dynamically writes the file into memory using whatever it's named on your laptop
+            // Mount the binary directly into the virtual Emscripten system
             Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
             
+            status.innerText = "Reading Game ROM (700MB)... Please wait...";
             var reader2 = new FileReader();
+            
             reader2.onload = function() {
                 Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
                 
-                // Feeds the exact matching text strings directly into the emulator argument array
+                status.innerText = "Files mapped! Booting Flycast architecture...";
+                document.getElementById('picker-ui').style.display = 'none';
+                document.getElementById('canvas').style.display = 'block';
+                
+                // Binding internal system arguments exactly to what the binary expects
                 Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
                 
                 var loadScript = document.createElement('script');
                 loadScript.src = 'build/prod/flycast.js';
                 document.head.appendChild(loadScript);
             };
+            
+            // Track giant file streaming layout process to prevent browser lockups
+            reader2.onprogress = function(data) {
+                if (data.lengthComputable) {
+                    var progress = Math.round((data.loaded / data.total) * 100);
+                    status.innerText = "Streaming Game File to RAM: " + progress + "%";
+                }
+            };
+            
             reader2.readAsArrayBuffer(gameFile);
         };
         reader1.readAsArrayBuffer(biosFile);
