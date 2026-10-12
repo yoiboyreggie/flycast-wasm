@@ -2,16 +2,17 @@
 <html>
 <head>
     <title>Workspace Simulation</title>
+    <!-- Forces the browser to unblock WebAssembly multi-threading features -->
     <script src="coi-serviceworker.js"></script>
     <style>
         body, html { margin:0; padding:0; width:100%; height:100%; background:#222; overflow:hidden; font-family:sans-serif; }
         #canvas-container { display:flex; flex-direction:column; justify-content:center; align-items:center; width:100vw; height:100vh; }
-        canvas { width:100vw !important; height:56.25vw !important; max-height:85vh !important; max-width:177.78vh !important; background:#111; display:none; }
+        #game { width:100% !important; height:100% !important; }
         #picker-ui { color:#fff; text-align:center; padding:30px; border:2px dashed #555; background:#1a1a1a; border-radius:8px; width:350px; }
         button { background:#007bff; color:#fff; border:none; padding:12px 24px; font-size:16px; border-radius:4px; cursor:pointer; margin-top:15px; width:100%; font-weight:bold; }
         button:hover { background:#0056b3; }
         input[type="file"] { margin: 10px 0 20px 0; color: #ccc; }
-        #status-msg { margin-top: 15px; color: #ffc107; font-size: 14px; font-weight: bold; min-height: 20px; }
+        #status-msg { margin-top: 15px; color: #ffc107; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -28,71 +29,56 @@
         <button id="start-btn">Launch Widescreen Emulator</button>
         <div id="status-msg"></div>
     </div>
-    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="game"></div>
 </div>
 <script>
-    var biosFile, gameFile;
     var status = document.getElementById('status-msg');
-    document.getElementById('bios-input').onchange = function(e) { biosFile = e.target.files[0]; };
-    document.getElementById('game-input').onchange = function(e) { gameFile = e.target.files[0]; };
-
+    
     document.getElementById('start-btn').onclick = function() {
-        if (!biosFile || !gameFile) {
+        var biosInput = document.getElementById('bios-input').files[0];
+        var gameInput = document.getElementById('game-input').files[0];
+
+        if (!biosInput || !gameInput) {
             status.innerText = "Error: Select BOTH files before booting!";
             return;
         }
-        
-        status.innerText = "Processing 2MB System BIOS data...";
-        var reader1 = new FileReader();
-        
-        reader1.onload = function() {
-            try {
-                Module['FS_createDataFile']('/', biosFile.name, new Uint8Array(reader1.result), true, true);
-            } catch(e) { console.log("BIOS already mounted"); }
-            
-            status.innerText = "Initializing 700MB ROM block stream...";
-            var reader2 = new FileReader();
-            
-            reader2.onload = function() {
-                try {
-                    Module['FS_createDataFile']('/', gameFile.name, new Uint8Array(reader2.result), true, true);
-                } catch(e) { console.log("ROM already mounted"); }
-                
-                status.innerText = "Assets bound! Finalizing engine assembly...";
-                document.getElementById('picker-ui').style.display = 'none';
-                document.getElementById('canvas').style.display = 'block';
-                
-                Module['arguments'] = ['-bios', '/' + biosFile.name, '-game', '/' + gameFile.name];
-                
-                var loadScript = document.createElement('script');
-                // Self-correcting fallbacks unblocking path calculation conflicts
-                loadScript.src = 'build/prod/flycast.js';
-                loadScript.onerror = function() {
-                    console.log("Local path failed, running secondary injection stream...");
-                    var backupScript = document.createElement('script');
-                    backupScript.src = 'https://emulatorjs.org';
-                    document.head.appendChild(backupScript);
-                };
-                document.head.appendChild(loadScript);
-            };
-            
-            reader2.onprogress = function(data) {
-                if (data.lengthComputable) {
-                    var progress = Math.round((data.loaded / data.total) * 100);
-                    status.innerText = "Streaming Game File to RAM: " + progress + "%";
-                }
-            };
-            
-            reader2.readAsArrayBuffer(gameFile);
-        };
-        reader1.readAsArrayBuffer(biosFile);
-    };
 
-    var Module = {
-        canvas: document.getElementById('canvas'),
-        print: function(text) { console.log(text); },
-        printErr: function(text) { console.error(text); },
-        preRun: [function() { Module['FS'] = FS; }]
+        status.innerText = "Creating localized memory streams...";
+        
+        // Bypasses browser size crashes by transforming files into virtual memory URLs
+        var biosURL = URL.createObjectURL(biosInput);
+        var gameURL = URL.createObjectURL(gameInput);
+
+        document.getElementById('picker-ui').style.display = 'none';
+
+        // Initializing the canonical EmulatorJS configuration framework definitions
+        EJS_player = '#game';
+        EJS_core = 'dreamcast'; 
+        EJS_gameName = "Marvel vs Capcom 2";
+        
+        // CRUCIAL FIX: Points the system directly to the engine folders inside your fork
+        EJS_pathtodata = './build/prod/'; 
+        
+        EJS_bios = biosURL; 
+        EJS_gameUrl = gameURL; 
+
+        EJS_Settings = {
+            widescreen: true, 
+            aspectRatio: "16:9",
+            vSync: false,
+            startInFullscreen: false
+        };
+
+        // Injecting the core framework configuration builder script dynamically
+        var loadScript = document.createElement('script');
+        loadScript.src = 'https://' + 'cdn.' + 'emulatorjs' + '.org/stable/data/loader.js';
+        
+        loadScript.onerror = function() {
+            status.innerText = "Framework loader error. Check network restrictions.";
+            document.getElementById('picker-ui').style.display = 'block';
+        };
+
+        document.head.appendChild(loadScript);
     };
 </script>
 </body>
