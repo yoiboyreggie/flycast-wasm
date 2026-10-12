@@ -1,21 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workspace Simulation</title>
+    <!-- FIX: Loads the security worker to force unblock the WebAssembly features -->
+    <script src="coi-serviceworker.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
-        #canvas-container { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
-        canvas { width: 100vw !important; height: 56.25vw !important; max-height: 100vh !important; max-width: 177.78vh !important; background-color: #111; }
+        body, html { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; }
+        #canvas-container { display:flex; justify-content:center; align-items:center; width:100vw; height:100vh; }
+        canvas { width:100vw !important; height:56.25vw !important; max-height:100vh !important; max-width:177.78vh !important; background:#111; }
     </style>
 </head>
 <body>
-
-<div id="canvas-container">
-    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-</div>
-
+<div id="canvas-container"><canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas></div>
 <script>
     var Module = {
         canvas: document.getElementById('canvas'),
@@ -27,8 +23,6 @@
         printErr: function(text) { console.error(text); }
     };
 </script>
-
 <script src="build/prod/flycast.js"></script>
-
 </body>
 </html>
